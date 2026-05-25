@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Ads System</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    background:#0f172a;
+    font-family:Arial,sans-serif;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    color:white;
+    padding:20px;
+}
+
+.card{
+    width:100%;
+    max-width:360px;
+    background:#111827;
+    border-radius:22px;
+    padding:25px;
+    text-align:center;
+    box-shadow:0 0 30px rgba(0,0,0,.4);
+}
+
+.logo{
+    font-size:60px;
+    margin-bottom:10px;
+}
+
+h1{
+    font-size:28px;
+    margin-bottom:8px;
+}
+
+.desc{
+    color:#cbd5e1;
+    margin-bottom:20px;
+    font-size:15px;
+}
+
+.status{
+    margin-top:20px;
+    color:#38bdf8;
+    min-height:24px;
+    font-size:16px;
+}
+
+.timer{
+    font-size:38px;
+    font-weight:bold;
+    color:#22c55e;
+    margin:18px 0;
+}
+
+button{
+    width:100%;
+    border:none;
+    border-radius:14px;
+    padding:15px;
+    font-size:18px;
+    cursor:pointer;
+    margin-top:12px;
+    transition:.2s;
+}
+
+.start{
+    background:#22c55e;
+    color:white;
+}
+
+.stop{
+    background:#ef4444;
+    color:white;
+}
+
+button:hover{
+    transform:scale(1.02);
+}
+
+.footer{
+    margin-top:18px;
+    font-size:13px;
+    color:#94a3b8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<div class="logo">📺</div>
+
+<h1>Smart Ads</h1>
+
+<div class="desc">
+Tap start to continue
+</div>
+
+<div class="timer" id="timer">
+--
+</div>
+
+<button class="start" onclick="startSystem()">
+Start
+</button>
+
+<button class="stop" onclick="stopSystem()">
+Stop
+</button>
+
+<div class="status" id="status">
+Idle
+</div>
+
+<div class="footer">
+Mobile Optimized
+</div>
+
+</div>
+
+<!-- ✅ NEW SDK ONLY -->
+<script src="https://libtl.com/sdk.js"
+data-zone="11051446"
+data-sdk="show_11051446"></script>
+
+<script>
+let running=false;
+
+const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+
+function setStatus(text){
+    document.getElementById("status").innerText=text;
+}
+
+function setTimer(text){
+    document.getElementById("timer").innerText=text;
+}
+
+// STOP
+function stopSystem(){
+
+    running=false;
+
+    localStorage.setItem("running","0");
+
+    setStatus("Stopped");
+    setTimer("--");
+}
+
+// COUNTDOWN
+async function countdown(sec,label){
+
+    for(let i=sec;i>0;i--){
+
+        if(!running) return false;
+
+        setStatus(label);
+        setTimer(i+"s");
+
+        await sleep(1000);
+    }
+
+    return true;
+}
+
+// SHOW AD
+async function showAd(){
+
+    // wait SDK
+    let tries=0;
+
+    while(typeof window.show_11051446!=="function" && tries<10){
+
+        setStatus("Loading ads...");
+        await sleep(1000);
+
+        tries++;
+    }
+
+    if(typeof window.show_11051446!=="function"){
+
+        setStatus("SDK failed");
+        return false;
+    }
+
+    try{
+
+        setStatus("📺 Opening ad...");
+
+        let ad=window.show_11051446();
+
+        let timeout=sleep(15000);
+
+        await Promise.race([ad,timeout]);
+
+        return true;
+
+    }catch{
+
+        setStatus("Ad unavailable");
+        return false;
+    }
+}
+
+// MAIN LOOP
+async function loop(){
+
+    while(running){
+
+        // prepare delay
+        let ok=await countdown(
+            Math.floor(Math.random()*3)+3,
+            "Preparing..."
+        );
+
+        if(!ok) return;
+
+        // show ad
+        await showAd();
+
+        if(!running) return;
+
+        // wait before reload
+        ok=await countdown(
+            Math.floor(Math.random()*4)+10,
+            "Next session"
+        );
+
+        if(!ok) return;
+
+        // redirect/reload
+        window.location.reload();
+    }
+}
+
+// START
+function startSystem(){
+
+    if(running) return;
+
+    running=true;
+
+    localStorage.setItem("running","1");
+
+    setStatus("Started");
+
+    loop();
+}
+
+// AUTO RESUME
+window.onload=()=>{
+
+    if(localStorage.getItem("running")==="1"){
+
+        running=true;
+
+        loop();
+    }
+};
+</script>
+
+</body>
+</html>
